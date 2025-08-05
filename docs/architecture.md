@@ -11,40 +11,7 @@ The system allows users to request SAP business processes in natural language. V
 ---
 
 ## Component Diagram
-
-flowchart LR
-    A[User Interface<br/>(Streamlit/Dash/React)]
-    B[Gateway API<br/>(FastAPI)]
-    C[Agentic Orchestrator<br/>(LangChain/LangGraph)]
-    D1[AI Agent - HR Domain]
-    D2[AI Agent - Finance Domain]
-    D3[AI Agent - Procurement Domain]
-    E1[Vector Database<br/>(FAISS/Pinecone)]
-    E2[Relational DB<br/>(PostgreSQL)]
-    F[SAP/BTP APIs or Mock Services]
-
-    A --> B
-    B --> C
-    C --> D1
-    C --> D2
-    C --> D3
-
-    %% HR Agent
-    D1 --> E1
-    D1 --> E2
-    D1 --> F
-
-    %% Finance Agent
-    D2 --> E1
-    D2 --> E2
-    D2 --> F
-
-    %% Procurement Agent
-    D3 --> E1
-    D3 --> E2
-    D3 --> F
-
-    C --> E2
+![Architecture Diagram](architecture_diagram.png)
 
 ## Component Explanations
 
