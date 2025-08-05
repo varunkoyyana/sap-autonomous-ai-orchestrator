@@ -12,7 +12,40 @@ The system allows users to request SAP business processes in natural language. V
 
 ## Component Diagram
 
-```mermaid flowchart LR A[User Interface&lt;br/&gt;(Streamlit/Dash/React)] B[Gateway API&lt;br/&gt;(FastAPI)] C[Agentic Orchestrator&lt;br/&gt;(LangChain/LangGraph)] D1[AI Agent - HR Domain] D2[AI Agent - Finance Domain] D3[AI Agent - Procurement Domain] E1[Vector Database&lt;br/&gt;(FAISS/Pinecone)] E2[Relational DB&lt;br/&gt;(PostgreSQL)] F[SAP/BTP APIs or Mock Services] A --> B B --> C C --> D1 C --> D2 C --> D3 D1 --> E1 D2 --> E1 D3 --> E1 D1 --> E2 D2 --> E2 D3 --> E2 D1 --> F D2 --> F D3 --> F C --> E2 ```
+flowchart LR
+    A[User Interface<br/>(Streamlit/Dash/React)]
+    B[Gateway API<br/>(FastAPI)]
+    C[Agentic Orchestrator<br/>(LangChain/LangGraph)]
+    D1[AI Agent - HR Domain]
+    D2[AI Agent - Finance Domain]
+    D3[AI Agent - Procurement Domain]
+    E1[Vector Database<br/>(FAISS/Pinecone)]
+    E2[Relational DB<br/>(PostgreSQL)]
+    F[SAP/BTP APIs or Mock Services]
+
+    A --> B
+    B --> C
+    C --> D1
+    C --> D2
+    C --> D3
+
+    %% HR Agent
+    D1 --> E1
+    D1 --> E2
+    D1 --> F
+
+    %% Finance Agent
+    D2 --> E1
+    D2 --> E2
+    D2 --> F
+
+    %% Procurement Agent
+    D3 --> E1
+    D3 --> E2
+    D3 --> F
+
+    C --> E2
+
 ## Component Explanations
 
 - **User Interface:** Allows natural language input and shows workflow statuses.
