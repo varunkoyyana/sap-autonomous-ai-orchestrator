@@ -1,7 +1,26 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
+import os
 
 app = FastAPI()
+
+# Load model and HR docs
+MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+DOC_PATH = os.path.join(os.path.dirname(__file__), "hr_docs.txt")
+with open(DOC_PATH, "r") as f:
+    HR_DOCS = [line.strip() for line in f if line.strip()]
+HR_EMB = np.array(MODEL.encode(HR_DOCS))
+INDEX = faiss.IndexFlatL2(HR_EMB.shape[1])
+INDEX.add(HR_EMB)
+
+def search_docs(query, top_k=1):
+    q_emb = MODEL.encode([query])
+    D, I = INDEX.search(np.array(q_emb), top_k)
+    return [HR_DOCS[i] for i in I[0]]
+
 
 class TaskRequest(BaseModel):
     task: str
@@ -12,9 +31,14 @@ def health_check():
 
 @app.post('/task')
 def execute_task(request: TaskRequest):
-    if "onboard" in request.task.lower():
+    q = request.task.lower()
+    if "policy" in q or "info" in q:
+        results = search_docs(request.task)
+        return {"result": f"Semantic search answer: {results[0]}"}
+    elif "onboard" in q:
         return {"result": "Employee onboarding for HR started."}
-    elif "leave" in request.task.lower():
+    elif "leave" in q:
         return {"result": "Leave request is being processed by HR."}
     else:
         return {"result": f"HR agent received unclassified task: '{request.task}'"}
+
