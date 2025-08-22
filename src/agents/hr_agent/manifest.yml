@@ -1,0 +1,10 @@
+---
+applications:
+  - name: hr-agent           # change to hr-agent, procurement-agent, etc.
+    path: ./
+    memory: 512M
+    buildpacks:
+      - python_buildpack
+    random-route: true
+    env:
+      OPENAI_API_KEY: "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"

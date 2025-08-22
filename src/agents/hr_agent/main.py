@@ -3,12 +3,12 @@ import os
 import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
-from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
+from openai import OpenAI
 
 # -------------------------------------------------
 # Configure logging
@@ -21,27 +21,69 @@ logging.basicConfig(
 app = FastAPI()
 
 # -------------------------------------------------
+# OpenAI Embedding Function (replacing HuggingFace)
+# -------------------------------------------------
+def get_openai_embedding(texts):
+    """Use OpenAI embeddings instead of HuggingFace"""
+    try:
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        if isinstance(texts, str):
+            texts = [texts]
+            
+        response = client.embeddings.create(
+            input=texts,
+            model="text-embedding-ada-002"
+        )
+        
+        embeddings = [item.embedding for item in response.data]
+        return np.array(embeddings)
+        
+    except Exception as e:
+        logging.error(f"OpenAI embedding error: {e}")
+        raise
+
+# -------------------------------------------------
 # Load HR reference documents and embeddings
 # -------------------------------------------------
 try:
-    MODEL = SentenceTransformer('all-MiniLM-L6-v2')
     DOC_PATH = os.path.join(os.path.dirname(__file__), "hr_docs.txt")
     with open(DOC_PATH, "r") as f:
         HR_DOCS = [line.strip() for line in f if line.strip()]
-    HR_EMB = np.array(MODEL.encode(HR_DOCS))
+    
+    logging.info(f"Loaded {len(HR_DOCS)} HR document lines from {DOC_PATH}")
+    logging.info(f"First document: {HR_DOCS[0] if HR_DOCS else 'NONE'}")
+    
+    HR_EMB = get_openai_embedding(HR_DOCS)  # CHANGED: was get_remote_embedding
     INDEX = faiss.IndexFlatL2(HR_EMB.shape[1])
     INDEX.add(HR_EMB)
-    logging.info(f"Loaded {len(HR_DOCS)} HR documents.")
+    logging.info(f"Successfully created embeddings and index with OpenAI")
+    
 except Exception as e:
     logging.error("Failed to load HR docs or embeddings: %s", e)
+    logging.error(f"Current working directory: {os.getcwd()}")
+    logging.error(f"Files in current directory: {os.listdir('.')}")
     HR_DOCS = []
     INDEX = None
 
-def search_docs(query, top_k=1):
+def search_docs(query, top_k=3):
+    """Search for relevant HR documents"""
     try:
-        q_emb = MODEL.encode([query])
-        D, I = INDEX.search(np.array(q_emb), top_k)
-        return [HR_DOCS[i] for i in I[0]]
+        if INDEX is None or len(HR_DOCS) == 0:
+            logging.warning("No HR documents available for search")
+            return []
+            
+        q_emb = get_openai_embedding([query])  # CHANGED: was get_remote_embedding
+        D, I = INDEX.search(q_emb, top_k)
+        results = [HR_DOCS[i] for i in I[0] if i < len(HR_DOCS)]
+        
+        # Debug logging
+        logging.info(f"Search query: {query}")
+        logging.info(f"Found {len(results)} relevant documents")
+        for i, doc in enumerate(results):
+            logging.info(f"Doc {i}: {doc[:100]}...")
+            
+        return results
     except Exception as e:
         logging.error("Error searching HR docs: %s", e)
         return []
@@ -84,16 +126,151 @@ def get_sap_token():
         logging.error("Error fetching SAP token: %s", e)
         raise
 
-def generate_answer(query, context):
+def detect_intent(query: str):
+    """Detect if query is informational or action-based"""
+    action_patterns = [
+        "apply for", "submit", "request", "create", "process",
+        "want to", "need to", "how do i submit", "help me apply",
+        "start", "begin", "initiate"
+    ]
+    
+    info_patterns = [
+        "what is", "how many", "tell me", "count of", "policy",
+        "information", "explain", "describe", "about", "details"
+    ]
+    
+    query_lower = query.lower()
+    
+    # Check for action intent first
+    if any(pattern in query_lower for pattern in action_patterns):
+        return "action"
+    elif any(pattern in query_lower for pattern in info_patterns):
+        return "information"
+    else:
+        # Default to information for safety
+        return "information"
+
+def generate_answer(query, context_docs):
+    """Generate answer using retrieved documents as context"""
     try:
+        if not context_docs:
+            context = "No relevant company documents found."
+        else:
+            context = "\n\n".join(context_docs)
+        
+        # Debug logging
+        logging.info(f"Context being sent to LLM: {context[:300]}...")
+        
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an expert HR assistant. Use the provided company HR documents to answer clearly and concisely."),
-            ("human", "Question: {question}\nContext: {context}")
+            ("system", """You are an expert HR assistant for this company. 
+            Use ONLY the provided company HR documents to answer questions accurately. 
+            If the information is not in the documents, say so clearly.
+            Be specific and cite the exact information from the documents."""),
+            ("human", "Company HR Documents:\n{context}\n\nQuestion: {question}\n\nAnswer based on the company documents:")
         ])
-        return llm.invoke(prompt.format_messages(question=query, context=context)).content
+        
+        response = llm.invoke(prompt.format_messages(question=query, context=context))
+        
+        # Debug logging
+        logging.info(f"LLM response: {response.content[:200]}...")
+        
+        return response.content
     except Exception as e:
         logging.error("Error generating LLM answer: %s", e)
         return "Error generating answer."
+
+def process_leave_action(query, context_answer, context_docs):
+    """Process leave request action with SAP API call"""
+    payload = {
+        "employeeName": "John Smith",  # This should be extracted from user input
+        "leaveType": "Annual",
+        "startDate": "2025-09-01",
+        "endDate": "2025-09-10"
+    }
+    
+    try:
+        token = get_sap_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        logging.info("Sending leave request to SAP: %s", SAP_API_URL_LEAVE)
+        sap_resp = requests.post(SAP_API_URL_LEAVE, json=payload, headers=headers)
+        sap_status = sap_resp.status_code
+
+        if sap_resp.headers.get("Content-Type", "").startswith("application/json"):
+            sap_result = sap_resp.json()
+        else:
+            sap_result = sap_resp.text
+
+        logging.info("SAP Leave API Response Status: %s", sap_status)
+        
+        return {
+            "result": context_answer,
+            "source_document": "\n".join(context_docs) if context_docs else "",
+            "sap_api_status": sap_status,
+            "sap_api_result": sap_result,
+            "action_performed": "leave_request_submitted"
+        }
+        
+    except Exception as e:
+        sap_status = "ERROR"
+        sap_result = str(e)
+        logging.error("SAP leave API call failed: %s", e)
+        
+        return {
+            "result": context_answer,
+            "source_document": "\n".join(context_docs) if context_docs else "",
+            "sap_api_status": sap_status,
+            "sap_api_result": sap_result,
+            "action_performed": "leave_request_failed"
+        }
+
+def process_onboarding_action(query, context_answer, context_docs):
+    """Process onboarding action with SAP API call"""
+    payload = {
+        "employeeName": "Jane Doe",  # This should be extracted from user input
+        "department": "IT",
+        "startDate": "2025-08-14"
+    }
+    
+    try:
+        token = get_sap_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        logging.info("Sending onboarding request to SAP: %s", SAP_API_URL_HR)
+        sap_resp = requests.post(SAP_API_URL_HR, json=payload, headers=headers)
+        sap_status = sap_resp.status_code
+
+        if sap_resp.headers.get("Content-Type", "").startswith("application/json"):
+            sap_result = sap_resp.json()
+        else:
+            sap_result = sap_resp.text
+
+        logging.info("SAP Onboarding API Response Status: %s", sap_status)
+        
+        return {
+            "result": context_answer,
+            "source_document": "\n".join(context_docs) if context_docs else "",
+            "sap_api_status": sap_status,
+            "sap_api_result": sap_result,
+            "action_performed": "onboarding_submitted"
+        }
+        
+    except Exception as e:
+        sap_status = "ERROR"
+        sap_result = str(e)
+        logging.error("SAP onboarding API call failed: %s", e)
+        
+        return {
+            "result": context_answer,
+            "source_document": "\n".join(context_docs) if context_docs else "",
+            "sap_api_status": sap_status,
+            "sap_api_result": sap_result,
+            "action_performed": "onboarding_failed"
+        }
 
 # -------------------------------------------------
 # Request model
@@ -109,103 +286,52 @@ def health_check():
     return {"status": "ok"}
 
 # -------------------------------------------------
-# Main endpoint for HR tasks (Onboarding + Leave)
+# Debug endpoint
+# -------------------------------------------------
+@app.get("/debug")
+def debug_info():
+    return {
+        "message": "NEW CODE WITH OPENAI EMBEDDINGS",
+        "timestamp": "2025-08-21-8:44PM",
+        "hr_docs_count": len(HR_DOCS),
+        "sample_hr_doc": HR_DOCS[0] if HR_DOCS else "NO DOCS LOADED",
+        "index_status": "LOADED" if INDEX is not None else "NOT LOADED"
+    }
+
+# -------------------------------------------------
+# Main endpoint for HR tasks
 # -------------------------------------------------
 @app.post("/task")
 def execute_task(request: TaskRequest):
     logging.info("Received task: %s", request.task)
-    q = request.task.lower()
-
+    
     try:
-        if "policy" in q or "info" in q or "onboard" in q or "leave" in q:
-            results = search_docs(request.task)
-            context_doc = results[0] if results else ""
-            answer = generate_answer(request.task, context_doc)
-
-            # -------------------------------------------------
-            # Onboarding section
-            # -------------------------------------------------
-            if "onboard" in q:
-                payload = {
-                    "employeeName": "Jane Doe",  # Replace or parse dynamically
-                    "department": "IT",
-                    "startDate": "2025-08-14"
-                }
-                try:
-                    token = get_sap_token()
-                    headers = {
-                        "Authorization": f"Bearer {token}",
-                        "Content-Type": "application/json"
-                    }
-                    logging.info("Sending onboarding request to SAP: %s", SAP_API_URL_HR)
-                    sap_resp = requests.post(SAP_API_URL_HR, json=payload, headers=headers)
-                    sap_status = sap_resp.status_code
-
-                    if sap_resp.headers.get("Content-Type", "").startswith("application/json"):
-                        sap_result = sap_resp.json()
-                    else:
-                        sap_result = sap_resp.text
-
-                    logging.info("SAP Onboarding API Response Status: %s", sap_status)
-                except Exception as e:
-                    sap_status = "ERROR"
-                    sap_result = str(e)
-                    logging.error("SAP onboarding API call failed: %s", e)
-
-                return {
-                    "result": answer,
-                    "source_document": context_doc,
-                    "sap_api_status": sap_status,
-                    "sap_api_result": sap_result
-                }
-
-            # -------------------------------------------------
-            # Leave request section
-            # -------------------------------------------------
-            if "leave" in q:
-                payload = {
-                    "employeeName": "John Smith",  # Replace or parse dynamically
-                    "leaveType": "Annual",
-                    "startDate": "2025-09-01",
-                    "endDate": "2025-09-10"
-                }
-                try:
-                    token = get_sap_token()
-                    headers = {
-                        "Authorization": f"Bearer {token}",
-                        "Content-Type": "application/json"
-                    }
-                    logging.info("Sending leave request to SAP: %s", SAP_API_URL_LEAVE)
-                    sap_resp = requests.post(SAP_API_URL_LEAVE, json=payload, headers=headers)
-                    sap_status = sap_resp.status_code
-
-                    if sap_resp.headers.get("Content-Type", "").startswith("application/json"):
-                        sap_result = sap_resp.json()
-                    else:
-                        sap_result = sap_resp.text
-
-                    logging.info("SAP Leave API Response Status: %s", sap_status)
-                except Exception as e:
-                    sap_status = "ERROR"
-                    sap_result = str(e)
-                    logging.error("SAP leave API call failed: %s", e)
-
-                return {
-                    "result": answer,
-                    "source_document": context_doc,
-                    "sap_api_status": sap_status,
-                    "sap_api_result": sap_result
-                }
-
-            # Generic HR info
-            return {
-                "result": answer,
-                "source_document": context_doc
-            }
-
-        # Fallback
+        # Step 1: Always retrieve relevant documents first
+        relevant_docs = search_docs(request.task)
+        
+        # Step 2: Generate answer using retrieved context
+        answer = generate_answer(request.task, relevant_docs)
+        
+        # Step 3: Detect intent (information vs action)
+        intent = detect_intent(request.task)
+        
+        logging.info(f"Intent detected: {intent}")
+        
+        # Step 4: Handle based on intent and topic
+        query_lower = request.task.lower()
+        
+        # Action-based requests
+        if intent == "action":
+            if "leave" in query_lower:
+                return process_leave_action(request.task, answer, relevant_docs)
+            elif "onboard" in query_lower:
+                return process_onboarding_action(request.task, answer, relevant_docs)
+        
+        # Information-based requests (default)
         return {
-            "result": f"HR agent received unclassified task: '{request.task}'"
+            "result": answer,
+            "source_document": "\n".join(relevant_docs) if relevant_docs else "",
+            "intent_detected": intent
         }
 
     except Exception as e:
