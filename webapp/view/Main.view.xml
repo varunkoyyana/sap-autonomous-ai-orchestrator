@@ -1,0 +1,120 @@
+<mvc:View controllerName="sap.ai.orchestrator.controller.Main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    
+  <Page id="page" title="AI Business Assistant" class="sapUiContentPadding">
+    
+    <VBox id="_IDGenVBox4" class="sapUiMediumMargin">
+      
+      <!-- Domain Selection -->
+      <HBox id="_IDGenHBox2" alignItems="Center" class="sapUiSmallMarginBottom">
+        <Label id="_IDGenLabel" text="Select Domain:" class="sapUiTinyMarginEnd"/>
+        <Select id="domainSelect" selectedKey="hr" change="onDomainChange" items="{/domains}" width="200px">
+          <core:Item id="_IDGenItem" key="{key}" text="{text}" />
+        </Select>
+      </HBox>
+
+      <!-- Recommended Questions -->
+      <Panel id="_IDGenPanel2" headerText="💡 Try these sample questions:" expandable="true" expanded="true" class="sapUiSmallMarginBottom">
+        <List id="_IDGenList" items="{/recommended}" mode="None">
+          <StandardListItem id="_IDGenStandardListItem"
+            title="{question}"
+            type="Active"
+            icon="sap-icon://example"
+            press="onRecommendedPress"/>
+        </List>
+      </Panel>
+
+      <!-- Chat Interface -->
+      <Panel id="_IDGenPanel1" headerText="🤖 Conversation" class="chatPanel" height="400px">
+        <ScrollContainer id="chatContainer" height="350px" horizontal="false" vertical="true">
+          <VBox id="_IDGenVBox3" items="{/conversation}" class="chatContainer">
+            <HBox id="_IDGenHBox1" class="{parts: ['type'], formatter: '.formatMessageClass'}" wrap="Wrap">
+              <core:Icon id="_IDGenIcon" src="{parts: ['type'], formatter: '.formatMessageIcon'}" class="messageIcon"/>
+              <VBox id="_IDGenVBox2" class="messageContent">
+                <Text id="_IDGenText4" text="{content}" wrapping="true" class="messageText"/>
+                
+                <!-- Form Download Button -->
+                <Button id="_IDGenButton2" 
+                  text="📥 Download Form" 
+                  press="onDownloadForm"
+                  type="Emphasized"
+                  visible="{= ${type} === 'form_download'}"
+                  class="sapUiTinyMarginTop">
+                  <customData>
+                    <core:CustomData key="downloadUrl" value="{download_url}" />
+                  </customData>
+                </Button>
+                
+                <!-- Instructions List -->
+                <VBox id="_IDGenVBox1" visible="{= ${type} === 'form_download'}" class="sapUiTinyMarginTop">
+                  <Text id="_IDGenText3" text="Instructions:" class="instructionsHeader"/>
+                  <VBox id="_IDGenVBox" items="{instructions}">
+                    <Text id="_IDGenText2" text="• {}" wrapping="true" class="instructionItem"/>
+                  </VBox>
+                </VBox>
+                
+                <Text id="_IDGenText1" text="{timestamp}" class="messageTimestamp"/>
+              </VBox>
+            </HBox>
+          </VBox>
+        </ScrollContainer>
+      </Panel>
+
+      <!-- Input Section -->
+      <HBox id="_IDGenHBox" alignItems="End" class="inputSection">
+        <Input 
+          id="taskInput" 
+          placeholder="Ask your question or describe what you need help with..."
+          value=""
+          submit="onSubmit"
+          class="inputField"
+          width="500px"/>
+        <Button id="_IDGenButton1" 
+          text="Send" 
+          press="onSubmit"
+          type="Emphasized"
+          enabled="{= !${/isLoading}}"
+          class="sendButton"/>
+      </HBox>
+
+      <!-- Loading Indicator -->
+      <BusyIndicator id="_IDGenBusyIndicator" visible="{/isLoading}" text="Processing your request..." class="sapUiSmallMarginTop"/>
+
+      <!-- File Upload Area -->
+      <Panel id="_IDGenPanel" 
+        headerText="📁 Upload Completed Form" 
+        visible="{/showUploadArea}"
+        class="uploadPanel sapUiMediumMarginTop">
+        
+        <VBox class="uploadArea" id="uploadArea">
+          
+          <!-- Upload Button instead of drag-drop VBox -->
+          <Button id="_IDGenButton"
+            text="📤 Click to Upload File"
+            press="onFileUploadPress"
+            type="Emphasized"
+            icon="sap-icon://upload-to-cloud"
+            class="uploadButton"/>
+          
+          <Text id="_IDGenText" text="Supported formats: Word, Text files" class="uploadFormats sapUiTinyMarginTop"/>
+          
+          <!-- Upload Progress -->
+          <ProgressIndicator id="_IDGenProgressIndicator" 
+            percentValue="{/uploadProgress}" 
+            visible="{= ${/uploadProgress} > 0}"
+            class="sapUiSmallMarginTop"/>
+        </VBox>
+      </Panel>
+
+      <!-- File Processing Status -->
+      <MessageStrip id="_IDGenMessageStrip" 
+        text="Your file is being processed. We'll extract the information and ask you to confirm before submitting."
+        type="Information"
+        visible="{= ${/uploadProgress} > 0 &amp;&amp; ${/uploadProgress} &lt; 100}"
+        class="sapUiSmallMarginTop"/>
+
+    </VBox>
+  </Page>
+</mvc:View>

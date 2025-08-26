@@ -1,0 +1,5 @@
+applications:
+- name: orchestrator-ui
+  memory: 128M
+  buildpack: staticfile_buildpack
+  path: dist

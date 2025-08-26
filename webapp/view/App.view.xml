@@ -1,0 +1,10 @@
+<mvc:View controllerName="sap.ai.orchestrator.controller.App"
+    displayBlock="true"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    <App id="app">
+     <pages>
+            <mvc:XMLView id="mainPage" viewName="sap.ai.orchestrator.view.Main"/>
+        </pages>
+    </App>
+</mvc:View>
