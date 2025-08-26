@@ -107,7 +107,7 @@ cf push orchestrator-ui -p dist -b staticfile_buildpack
 Set up OAuth 2.0 credentials
 #Connect your endpoint URLs (update configs accordingly)
 
-###**🔮 Roadmap & Next Big Things**
+**🔮 Roadmap & Next Big Things**
 Multilingual & voice interfaces for natural conversations
 Advanced analytics dashboards for enterprise insights
 Role-based access & enterprise security governance
