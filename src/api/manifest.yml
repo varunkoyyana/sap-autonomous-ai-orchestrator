@@ -1,0 +1,8 @@
+---
+applications:
+  - name: orchestrator          
+    path: ./
+    memory: 512M
+    buildpacks:
+      - python_buildpack
+    random-route: true

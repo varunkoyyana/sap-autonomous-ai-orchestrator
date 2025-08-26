@@ -1,0 +1,3 @@
+Purchase Order Process: All orders must be approved by the procurement manager before placement.
+Supplier Policy: New suppliers require a background check and NDA before onboarding.
+Inventory Replenishment: Inventory below threshold triggers an automatic reorder request.

@@ -1,0 +1,3 @@
+Invoice Processing: Invoices are approved within 5 business days of receipt.
+Budget Review Policy: Department budgets are reviewed quarterly and require executive approval.
+Expense Reimbursement: Employees must submit receipts and itemized reports for reimbursement.

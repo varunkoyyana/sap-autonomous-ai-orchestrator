@@ -1,0 +1,27 @@
+<mvc:View controllerName="sap.ai.orchestrator.controller.Main"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+      <VBox id="_IDGenVBox" class="sapUiSmallMargin">
+    <!-- Domain Dropdown -->
+    <Select id="domainSelect" selectedKey="hr" change="onDomainChange" items="{/domains}">
+      <core:Item id="_IDGenItem" key="{key}" text="{text}" />
+    </Select>
+
+    <!-- Recommended Questions List -->
+    <Label text="Try these sample questions:" class="sapUiSmallMarginTop"/>
+    <List id="recommendedList" items="{/recommended}">
+      <StandardListItem id="_IDGenStandardListItem"
+        title="{question}"
+        type="Active"
+        press="onRecommendedPress"/>
+    </List>
+
+    <!-- Custom Question Input -->
+    <Input id="taskInput" placeholder="Type your question" />
+
+    <Button id="_IDGenButton" text="Ask" press="onSubmit"/>
+
+    <Text id="result" wrapping="true"/>
+  </VBox>
+</mvc:View>
