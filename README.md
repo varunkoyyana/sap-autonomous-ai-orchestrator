@@ -107,20 +107,20 @@ cf push orchestrator-ui -p dist -b staticfile_buildpack
 Set up OAuth 2.0 credentials
 #Connect your endpoint URLs (update configs accordingly)
 
-**🔮 Roadmap & Next Big Things**
+## 🔮 Roadmap & Next Big Things**
 Multilingual & voice interfaces for natural conversations
 Advanced analytics dashboards for enterprise insights
 Role-based access & enterprise security governance
 Multi-cloud support beyond SAP BTP
 
-###**📈 Project Impact & Why It Matters**
+## **📈 Project Impact & Why It Matters**
 Revolutionizes enterprise workflows—automate complex multi-step processes smoothly
 Combines AI, cloud, and enterprise SAP into a single, scalable, secure system
 Empowers teams with intelligent tools to reduce hours of manual work
 Demonstrates real-world mastery of end-to-end enterprise AI & SAP solutions
 📄 License
 MIT License — Empowering innovation!
-###👤 About Me
+## 👤 About Me
 Varun Koyyana
 LinkedIn: linkedin.com/in/saivarunkoyyana
 GitHub: @varunkoyyana
