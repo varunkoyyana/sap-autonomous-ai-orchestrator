@@ -106,7 +106,7 @@ cf push orchestrator-ui -p dist -b staticfile_buildpack
 **Use SAP BTP SAP Integration Suite**
 Set up OAuth 2.0 credentials
 #Connect your endpoint URLs (update configs accordingly)
-
+```
 ## 🔮 Roadmap & Next Big Things**
 Multilingual & voice interfaces for natural conversations
 Advanced analytics dashboards for enterprise insights
