@@ -84,3 +84,45 @@ What it does:
 ```bash
 git clone https://github.com/varunkoyyana/sap-autonomous-ai-orchestrator.git
 cd sap-autonomous-ai-orchestrator
+**Configure Environment**
+##Copy and customize:
+
+bash
+cp .env.example .env
+
+# Set your OpenAI API key, SAP OAuth credentials, and SAP iFlow URLs in .env
+#Run Backend
+#bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+#Build & Deploy Frontend
+#bash
+cd frontend
+npm install
+npm run build
+cf push orchestrator-ui -p dist -b staticfile_buildpack
+#Deploy & Configure SAP iFlows
+**Use SAP BTP SAP Integration Suite**
+Set up OAuth 2.0 credentials
+#Connect your endpoint URLs (update configs accordingly)
+
+###**🔮 Roadmap & Next Big Things**
+Multilingual & voice interfaces for natural conversations
+Advanced analytics dashboards for enterprise insights
+Role-based access & enterprise security governance
+Multi-cloud support beyond SAP BTP
+
+###**📈 Project Impact & Why It Matters**
+Revolutionizes enterprise workflows—automate complex multi-step processes smoothly
+Combines AI, cloud, and enterprise SAP into a single, scalable, secure system
+Empowers teams with intelligent tools to reduce hours of manual work
+Demonstrates real-world mastery of end-to-end enterprise AI & SAP solutions
+📄 License
+MIT License — Empowering innovation!
+###👤 About Me
+Varun Koyyana
+LinkedIn: linkedin.com/in/saivarunkoyyana
+GitHub: @varunkoyyana
+Email: varunkoyyana@gmail.com
+🚀 Let’s build the future of enterprise AI together. Drop your thoughts, questions, or collaborations below! 🌟
