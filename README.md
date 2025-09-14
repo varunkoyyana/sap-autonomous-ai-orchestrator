@@ -2,7 +2,7 @@
 
 ## 🌟 This Is Not Just a Project — It’s a Revolution in Enterprise Automation
 
-Hey LinkedIn family, friends, and SAP enthusiasts! After weeks of relentless effort, sleepless nights, and passionate coding, I’m thrilled to unveil the full story of what I’ve built — an enterprise-grade, intelligent Business Agent that spans **HR, Finance, and Procurement**. This isn’t just a demo; it’s a full-blown transformation for how businesses can leverage AI and SAP to automate, optimize, and empower in real time.
+Hey friends and SAP enthusiasts! After weeks of relentless effort, sleepless nights, and passionate coding, I’m thrilled to unveil the full story of what I’ve built — an enterprise-grade, intelligent Business Agent that spans **HR, Finance, and Procurement**. This isn’t just a demo; it’s a full-blown transformation for how businesses can leverage AI and SAP to automate, optimize, and empower in real time.
 
 And guess what? It’s **LIVE**, **finished**, and ready to reshape enterprise workflows! 🎉
 
