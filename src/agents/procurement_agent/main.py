@@ -21,6 +21,14 @@ logging.basicConfig(
 
 app = FastAPI()
 
+def test_health_endpoint():
+    # Automated testing for health
+    response = requests.get("http://localhost:8000/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+
 # -------------------------------------------------
 # OpenAI Embedding Function (replacing HuggingFace)
 # -------------------------------------------------
